@@ -72,9 +72,11 @@ class Main:  # pylint: disable=too-few-public-methods
         args_op.add_argument("-n", "--dry-run", required=False, action="store_true",
                              help="Go through all the motions but don't modify any files")
 
-        args_tmdb = parser.add_argument_group("TMDB arguments")
+        args_tmdb = parser.add_argument_group("TMDB arguments (one of these is REQUIRED)")
         args_tmdb.add_argument("-b", "--bearer", required=False, type=str,
-                               help="The bearer token for the TMDB API (REQUIRED)")
+                               help="The bearer token for the TMDB API")
+        args_tmdb.add_argument("-B", "--bearer-file", required=False, type=str,
+                               help="Read the bearer token for the TMDB API from this file")
 
         args: argparse.Namespace = parser.parse_args()
 
@@ -82,8 +84,19 @@ class Main:  # pylint: disable=too-few-public-methods
             Main._print_version()
             parser.exit()
 
-        if args.bearer is None:
-            parser.error("the following arguments are required: -b/--bearer")
+        if args.bearer is None and args.bearer_file is None:
+            parser.error("one of the following arguments is required: -b/--bearer, -f/--bearer-file")
+        if args.bearer is not None and args.bearer_file is not None:
+            parser.error("only one of the following arguments is supported at the same time: "
+                         "-b/--bearer, -B/--bearer-file")
+
+        if args.bearer_file is not None:
+            try:
+                with open(args.bearer_file, "r", encoding="utf-8") as bearer_file:
+                    args.bearer = bearer_file.read().strip()
+            except OSError as error:
+                print(f"Failed to open bearer file '{args.bearer_file}': {error}")
+                parser.exit(status=2)
 
         return args
 
