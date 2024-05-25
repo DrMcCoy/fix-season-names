@@ -25,14 +25,19 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Optional, Union
 
+from tmdb import TMDB
+
 
 class FixSeasonNames:  # pylint: disable=too-few-public-methods
     """! Fix Season Names logic.
     """
 
     def __init__(self, args: argparse.Namespace) -> None:
+        self._bearer: str = args.bearer
         self._dry_run: bool = args.dry_run
         self._paths: List[str] = args.path
+
+        self._tmdb: Optional[TMDB] = None
 
     @staticmethod
     def _find_tv_shows(paths: Union[List[Path], List[str]]) -> List[Path]:
@@ -68,7 +73,15 @@ class FixSeasonNames:  # pylint: disable=too-few-public-methods
 
         return None if element.text == "" else element.text
 
-    def _fix_season(self, season: Path) -> None:
+    @staticmethod
+    def _set_xml_element_text(node, path: str, text: str) -> None:
+        element = node.find(path)
+        if element is None:
+            raise KeyError(f"No such tag {path}")
+
+        element.text = text
+
+    def _fix_season(self, show_id: int, language: str, season: Path) -> None:
         season_tree = ET.parse(season)
         season_root = season_tree.getroot()
 
@@ -81,7 +94,26 @@ class FixSeasonNames:  # pylint: disable=too-few-public-methods
         if old_title is None or season_number is None:
             raise KeyError("Season has no title or season number")
 
-        print(f"Fixing season {season_number} ({old_title}) {'' if not self._dry_run else '(DRY RUN)'}")
+        assert self._tmdb is not None
+        season_details = self._tmdb.get_tv_series_season(show_id, int(season_number), language=language)
+
+        new_title = season_details["name"]
+
+        if old_title == new_title:
+            print(f"Season {season_number} already has the correct title '{new_title}'")
+            return
+
+        print(f"Fixing season {season_number} from '{old_title}' to '{new_title}' "
+              f"{'' if not self._dry_run else '(DRY RUN)'}")
+
+        if self._dry_run:
+            return
+
+        self._set_xml_element_text(season_root, "./title", new_title)
+
+        with open(season, "w", encoding="utf-8") as outfile:
+            outfile.write('\ufeff<?xml version="1.0" encoding="utf-8" standalone="yes"?>\n')
+            season_tree.write(outfile, encoding="unicode", xml_declaration=False)
 
     def _fix_show(self, show: Path) -> None:
         show_tree = ET.parse(show)
@@ -109,14 +141,13 @@ class FixSeasonNames:  # pylint: disable=too-few-public-methods
 
         for season in seasons:
             try:
-                self._fix_season(season)
-            except (OSError, AttributeError, KeyError) as error:
+                self._fix_season(int(tmdbid), language, season)
+            except (OSError, AttributeError, KeyError, ValueError) as error:
                 print(f"Skipping {season.parent.name}: {error}")
 
     def run(self) -> None:
         """! Run the main logic.
         """
-        print(f"Gathering up TV shows in paths {self._paths}...")
 
         try:
             shows = self._find_tv_shows(self._paths)
@@ -129,6 +160,8 @@ class FixSeasonNames:  # pylint: disable=too-few-public-methods
             return
 
         print(f"Found {len(shows)} TV show(s)")
+
+        self._tmdb = TMDB(self._bearer)
 
         for show_index, show in enumerate(shows, start=1):
             print("")

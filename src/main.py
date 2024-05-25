@@ -68,14 +68,22 @@ class Main:  # pylint: disable=too-few-public-methods
         parser.add_argument('path', nargs='*', default=['.'], help="The path to operate on. "
                             "If none given, use the current directory")
 
-        parser.add_argument("-n", "--dry-run", required=False, action="store_true",
-                            help="Go through all the motions but don't modify any files")
+        args_op = parser.add_argument_group("operational arguments")
+        args_op.add_argument("-n", "--dry-run", required=False, action="store_true",
+                             help="Go through all the motions but don't modify any files")
+
+        args_tmdb = parser.add_argument_group("TMDB arguments")
+        args_tmdb.add_argument("-b", "--bearer", required=False, type=str,
+                               help="The bearer token for the TMDB API (REQUIRED)")
 
         args: argparse.Namespace = parser.parse_args()
 
         if args.version:
             Main._print_version()
             parser.exit()
+
+        if args.bearer is None:
+            parser.error("the following arguments are required: -b/--bearer")
 
         return args
 
