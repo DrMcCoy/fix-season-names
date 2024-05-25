@@ -65,6 +65,12 @@ class Main:  # pylint: disable=too-few-public-methods
         parser.add_argument("-v", "--version", required=False, action="store_true",
                             help="Print the version and exit")
 
+        parser.add_argument('path', nargs='*', default=['.'], help="The path to operate on. "
+                            "If none given, use the current directory")
+
+        parser.add_argument("-n", "--dry-run", required=False, action="store_true",
+                            help="Go through all the motions but don't modify any files")
+
         args: argparse.Namespace = parser.parse_args()
 
         if args.version:
