@@ -142,7 +142,7 @@ class FixSeasonNames:  # pylint: disable=too-few-public-methods
         for season in seasons:
             try:
                 self._fix_season(int(tmdbid), language, season)
-            except (OSError, AttributeError, KeyError, ValueError) as error:
+            except (OSError, AttributeError, KeyError, ValueError, RuntimeError) as error:
                 print(f"Skipping {season.parent.name}: {error}")
 
     def run(self) -> None:
