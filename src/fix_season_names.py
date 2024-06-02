@@ -103,8 +103,8 @@ class FixSeasonNames:  # pylint: disable=too-few-public-methods
             print(f"Season {season_number} already has the correct title '{new_title}'")
             return
 
-        print(f"Fixing season {season_number} from '{old_title}' to '{new_title}' "
-              f"{'' if not self._dry_run else '(DRY RUN)'}")
+        print(f"Fixing season {season_number} from '{old_title}' to '{new_title}'"
+              f"{'' if not self._dry_run else ' (DRY RUN)'}")
 
         if self._dry_run:
             return
