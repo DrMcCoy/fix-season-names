@@ -131,7 +131,7 @@ class FixSeasonNames:  # pylint: disable=too-few-public-methods
             language = "en"
 
         if title is None or year is None or tmdbid is None:
-            raise KeyError("TV Show has no title, year or TMDB ID")
+            raise KeyError("TV show has no title, year or TMDB ID")
 
         print(f"{title} ({year}) [{tmdbid}] {{{language}}}")
 
